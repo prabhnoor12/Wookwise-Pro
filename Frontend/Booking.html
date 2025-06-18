@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Booking</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f9fafb; }
+    #sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 80%;
+      max-width: 14rem;
+      height: 100%;
+      background-color: #1e3a8a;
+      color: white;
+      padding: 1.5rem;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease-in-out;
+      z-index: 50;
+      overflow-y: auto;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    }
+    #sidebar.show-sidebar {
+      transform: translateX(0);
+    }
+    #menuBtn {
+      display: block;
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      background-color: #2563eb;
+      color: white;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      z-index: 60;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    #sidebarOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 40;
+      display: none;
+    }
+    #sidebarOverlay.show-overlay {
+      display: block;
+    }
+    nav a {
+      display: block;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+      border-radius: 0.5rem;
+      transition: background-color 0.2s ease, transform 0.2s ease;
+    }
+    nav a:hover {
+      background-color: #2563eb;
+      transform: translateX(5px);
+    }
+    nav a.active {
+      background-color: #2563eb;
+      color: white;
+    }
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+    }
+    .sidebar-header .icon {
+      font-size: 2rem;
+      color: #60a5fa;
+    }
+    .sidebar-footer {
+      margin-top: 2rem;
+      font-size: 0.95rem;
+      color: #cbd5e1;
+      text-align: center;
+      border-top: 1px solid #334155;
+      padding-top: 1.5rem;
+    }
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .sidebar-nav a {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.08rem;
+      font-weight: 500;
+      color: #fff;
+      padding: 0.7rem 1rem;
+      border-radius: 0.5rem;
+      text-decoration: none;
+      transition: background 0.18s, color 0.18s, transform 0.18s;
+    }
+    .sidebar-nav a .nav-icon {
+      font-size: 1.2rem;
+      opacity: 0.85;
+    }
+    .sidebar-nav a.active, .sidebar-nav a:hover {
+      background: #2563eb;
+      color: #fff;
+      transform: translateX(5px);
+    }
+    .sidebar-nav a.active .nav-icon, .sidebar-nav a:hover .nav-icon {
+      color: #fff;
+    }
+    .sidebar-divider {
+      border-bottom: 1px solid #334155;
+      margin: 1.5rem 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 2rem auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 0.75rem;
+      box-shadow: 0 4px 16px rgba(37,99,235,0.08);
+      border: 1px solid #e5e7eb;
+    }
+    .stepper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2.5rem;
+      margin-top: 1.5rem;
+    }
+    .stepper div {
+      text-align: center;
+    }
+    .stepper .circle {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      background-color: #2563eb;
+      color: white;
+      box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+      border: 2px solid #fff;
+    }
+    .stepper .circle.active {
+      background: linear-gradient(135deg, #2563eb 60%, #60a5fa 100%);
+      color: #fff;
+      border: 2px solid #2563eb;
+    }
+    .stepper .circle.completed {
+      background: #22c55e;
+      color: #fff;
+      border: 2px solid #22c55e;
+    }
+    .stepper .circle.upcoming {
+      background: #e5e7eb;
+      color: #64748b;
+      border: 2px solid #e5e7eb;
+    }
+    .stepper .label {
+      margin-top: 0.25rem;
+      font-size: 0.98rem;
+      font-weight: 500;
+    }
+    .booking-section {
+      background: #f1f5f9;
+      border-radius: 0.75rem;
+      padding: 2rem 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(37,99,235,0.04);
+      border: 1px solid #e5e7eb;
+    }
+    .booking-section h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #2563eb;
+      margin-bottom: 1.25rem;
+    }
+    .booking-form label {
+      font-weight: 500;
+      color: #1e293b;
+      margin-bottom: 0.25rem;
+      display: block;
+    }
+    .booking-form input[type="text"],
+    .booking-form input[type="email"],
+    .booking-form input[type="tel"],
+    .booking-form input[type="date"],
+    .booking-form input[type="time"],
+    .booking-form select {
+      width: 100%;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 1rem;
+      background: #fff;
+      margin-bottom: 0.5rem;
+      transition: border 0.18s;
+    }
+    .booking-form input:focus, .booking-form select:focus {
+      border: 1.5px solid #2563eb;
+      outline: none;
+      background: #f0f6ff;
+    }
+    .booking-form .form-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .booking-form .form-row > * {
+      flex: 1;
+    }
+    .booking-form .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .booking-form button {
+      font-weight: 600;
+      border-radius: 0.5rem;
+      padding: 0.7rem 2rem;
+      font-size: 1rem;
+      border: none;
+      cursor: pointer;
+      transition: background 0.18s;
+    }
+    .booking-form .cancel-btn {
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+    .booking-form .cancel-btn:hover {
+      background: #e5e7eb;
+    }
+    .booking-form .next-btn {
+      background: #2563eb;
+      color: #fff;
+    }
+    .booking-form .next-btn:hover {
+      background: #1d4ed8;
+    }
+    .booking-form .back-btn {
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+    .booking-form .back-btn:hover {
+      background: #e5e7eb;
+    }
+    .booking-form .submit-btn {
+      background: #22c55e;
+      color: #fff;
+    }
+    .booking-form .submit-btn:hover {
+      background: #16a34a;
+    }
+    .success-message {
+      background: #d1fae5;
+      color: #065f46;
+      border-radius: 0.5rem;
+      padding: 1.25rem 1rem;
+      margin: 2rem 0;
+      text-align: center;
+      font-size: 1.15rem;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(16,185,129,0.08);
+    }
+    .fade-in {
+      animation: fadeIn 0.5s;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+    /* Add margin to main content on large screens */
+    @media (min-width: 1024px) {
+      #sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 14rem;
+        height: 100%;
+        transform: translateX(0);
+        overflow-y: auto;
+      }
+      #menuBtn {
+        display: none;
+      }
+      #sidebarOverlay {
+        display: none;
+      }
+      .main-content {
+        margin-left: 14rem;
+      }
+    }
+    /* Animated stepper progress bar */
+    .stepper .line {
+      flex: 1;
+      height: 4px;
+      background: linear-gradient(90deg, #2563eb 60%, #60a5fa 100%);
+      margin: 0 0.5rem;
+      border-radius: 2px;
+      opacity: 0.4;
+      transition: opacity 0.3s;
+    }
+    .stepper .circle.completed ~ .line {
+      opacity: 1;
+      background: #22c55e;
+    }
+    /* Service preview card */
+    .service-preview {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      background: #f0f6ff;
+      border: 1.5px solid #2563eb22;
+      border-radius: 0.75rem;
+      padding: 1.25rem 1rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 8px rgba(37,99,235,0.06);
+      transition: box-shadow 0.2s;
+    }
+    .service-preview .color-dot {
+      width: 2.2rem;
+      height: 2.2rem;
+      border-radius: 50%;
+      border: 2.5px solid #fff;
+      box-shadow: 0 1px 4px #2563eb33;
+      margin-right: 0.5rem;
+    }
+    .service-preview .info {
+      flex: 1;
+    }
+    .service-preview .info h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #2563eb;
+      margin-bottom: 0.2rem;
+    }
+    .service-preview .info p {
+      font-size: 0.98rem;
+      color: #334155;
+      margin-bottom: 0.1rem;
+    }
+    .service-preview .info .meta {
+      font-size: 0.93rem;
+      color: #64748b;
+    }
+    /* Loading spinner */
+    .spinner {
+      border: 4px solid #e5e7eb;
+      border-top: 4px solid #2563eb;
+      border-radius: 50%;
+      width: 2.2rem;
+      height: 2.2rem;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto;
+      display: none;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+    /* Form feedback */
+    .form-feedback {
+      color: #dc2626;
+      font-size: 0.97rem;
+      margin-top: 0.2rem;
+      margin-bottom: 0.3rem;
+      display: block;
+      transition: opacity 0.2s;
+    }
+    .form-feedback.hidden {
+      display: none;
+    }
+    /* Accessibility focus */
+    input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 2px solid #2563eb;
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+  <button id="menuBtn" aria-label="Open menu">☰</button>
+  <div id="sidebarOverlay"></div>
+  <div class="flex">
+    <!-- Sidebar/Menu -->
+    <nav id="sidebar" aria-label="Main menu">
+      <div class="sidebar-header">
+        <span class="icon">💼</span>
+        <span class="text-2xl font-bold">SaaS Admin</span>
+      </div>
+      <div class="sidebar-nav">
+        <a href="Dashboard.html"><span class="nav-icon">🏠</span>Dashboard</a>
+        <a href="Booking.html" class="active"><span class="nav-icon">📅</span>Booking</a>
+        <a href="ServiceManagement.html"><span class="nav-icon">🛠️</span>Service Management</a>
+        <a href="Settings.html"><span class="nav-icon">⚙️</span>Settings</a>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-footer">
+        <span>© 2024 SaaS App</span>
+      </div>
+    </nav>
+    <!-- Main Content -->
+    <main class="flex-1 main-content">
+      <div class="container">
+        <!-- Progress Stepper -->
+        <div class="stepper">
+          <div>
+            <div class="circle active">1</div>
+            <div class="label text-blue-700">Service</div>
+          </div>
+          <div class="line"></div>
+          <div>
+            <div class="circle upcoming">2</div>
+            <div class="label text-gray-700">Date & Time</div>
+          </div>
+          <div class="line"></div>
+          <div>
+            <div class="circle upcoming">3</div>
+            <div class="label text-gray-700">Details</div>
+          </div>
+        </div>
+        <h1 class="text-3xl font-bold mb-6 text-blue-800 text-center">Book an Appointment</h1>
+        <div id="bookingApp">
+          <!-- Service Preview Card (hidden by default) -->
+          <div id="servicePreview" class="service-preview" style="display:none;">
+            <div class="color-dot" id="previewColor"></div>
+            <div class="info">
+              <h3 id="previewName"></h3>
+              <p id="previewDesc"></p>
+              <div class="meta" id="previewMeta"></div>
+            </div>
+          </div>
+          <!-- Step 1: Service Selection -->
+          <form id="serviceForm" class="booking-form fade-in" autocomplete="off" aria-label="Service Booking Form">
+            <h2>1. Enter Service Details</h2>
+            <div class="mb-4">
+              <label class="block mb-1 font-medium" for="serviceName">Service Name <span class="text-red-500">*</span></label>
+              <input title="serviceName" id="serviceName" name="serviceName" type="text" class="border rounded p-2 w-full focus:ring-2 focus:ring-blue-300" required aria-required="true" aria-describedby="serviceNameFeedback" />
+              <span id="serviceNameFeedback" class="form-feedback hidden" role="alert">Service name is required.</span>
+            </div>
+            <div class="form-row">
+              <div>
+                <label class="block mb-1 font-medium" for="serviceCategory">Category</label>
+                <select id="serviceCategory" class="border rounded p-2 w-full" aria-label="Service Category">
+                  <option value="">Select category</option>
+                  <option value="Hair">Hair</option>
+                  <option value="Therapy">Therapy</option>
+                  <option value="Yoga">Yoga</option>
+                  <option value="Online">Online</option>
+                </select>
+              </div>
+              <div>
+                <label class="block mb-1 font-medium" for="serviceDuration">Duration (minutes)</label>
+                <input id="serviceDuration" type="number" min="1" class="border rounded p-2 w-full" placeholder="e.g. 60" aria-label="Duration in minutes" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div>
+                <label class="block mb-1 font-medium" for="servicePrice">Price (€)</label>
+                <input id="servicePrice" type="number" min="0" step="0.01" class="border rounded p-2 w-full" placeholder="Optional" aria-label="Price in Euro" />
+              </div>
+              <div>
+                <label class="block mb-1 font-medium" for="serviceColor">Color Tag</label>
+                <input id="serviceColor" type="color" class="w-10 h-10 border rounded p-1" value="#2563eb" aria-label="Service Color Tag" />
+              </div>
+            </div>
+            <div class="mb-4">
+              <label class="block mb-1 font-medium" for="serviceDescription">Description</label>
+              <textarea id="serviceDescription" class="border rounded p-2 w-full" rows="2" placeholder="Optional, shows on public page" aria-label="Service Description"></textarea>
+            </div>
+            <div class="form-row">
+              <label class="inline-flex items-center gap-2" for="serviceActive">
+                <input type="checkbox" id="serviceActive" class="accent-blue-600" checked />
+                <span>Mark as Active</span>
+              </label>
+              <label class="inline-flex items-center gap-2" for="serviceBuffer">
+                <input type="checkbox" id="serviceBuffer" class="accent-blue-600" />
+                <span>Add buffer time after session</span>
+              </label>
+            </div>
+            <div class="actions">
+              <button type="reset" class="cancel-btn" aria-label="Cancel">Cancel</button>
+              <button type="submit" class="next-btn" aria-label="Next">Next</button>
+            </div>
+            <div class="spinner" id="formSpinner" aria-live="polite"></div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script>
+    // Fetch and render bookings
+    async function loadBookings() {
+      try {
+        const res = await fetch('/api/bookings');
+        if (!res.ok) throw new Error('Failed to load bookings');
+        const bookings = await res.json();
+        // Example: render bookings in a table
+        // const tbody = document.getElementById('bookingsTableBody');
+        // tbody.innerHTML = '';
+        // bookings.forEach(b => {
+        //   const row = document.createElement('tr');
+        //   row.innerHTML = `<td>${b.id}</td><td>${b.customer}</td><td>${b.date}</td>`;
+        //   tbody.appendChild(row);
+        // });
+      } catch (err) {
+        // Optionally show error message
+        // document.getElementById('bookingsError').textContent = err.message;
+      }
+    }
+
+    // Example: handle booking cancellation
+    async function cancelBooking(bookingId) {
+      if (!confirm('Cancel this booking?')) return;
+      try {
+        const res = await fetch(`/api/bookings/${bookingId}`, { method: 'DELETE' });
+        if (res.ok) {
+          loadBookings();
+        } else {
+          // Optionally show error
+        }
+      } catch {}
+    }
+
+    window.addEventListener('DOMContentLoaded', loadBookings);
+    // Attach cancelBooking to cancel buttons as needed
+
+    // Service preview logic
+    function updateServicePreview() {
+      const name = document.getElementById('serviceName').value.trim();
+      const desc = document.getElementById('serviceDescription').value.trim();
+      const color = document.getElementById('serviceColor').value;
+      const cat = document.getElementById('serviceCategory').value;
+      const dur = document.getElementById('serviceDuration').value;
+      const price = document.getElementById('servicePrice').value;
+      const preview = document.getElementById('servicePreview');
+      if (!name) {
+        preview.style.display = 'none';
+        return;
+      }
+      document.getElementById('previewName').textContent = name;
+      document.getElementById('previewDesc').textContent = desc || 'No description provided.';
+      document.getElementById('previewColor').style.background = color || '#2563eb';
+      document.getElementById('previewMeta').textContent =
+        (cat ? cat + ' | ' : '') +
+        (dur ? dur + ' min' : '') +
+        (price ? ' | €' + price : '');
+      preview.style.display = 'flex';
+    }
+    ['serviceName','serviceDescription','serviceColor','serviceCategory','serviceDuration','servicePrice'].forEach(id => {
+      document.getElementById(id).addEventListener('input', updateServicePreview);
+    });
+
+    // Improved form validation feedback
+    document.getElementById('serviceName').addEventListener('blur', function() {
+      if (!this.value.trim()) {
+        document.getElementById('serviceNameFeedback').classList.remove('hidden');
+      } else {
+        document.getElementById('serviceNameFeedback').classList.add('hidden');
+      }
+    });
+
+    // Connect booking form to API endpoint
+    document.getElementById('serviceForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const name = document.getElementById('serviceName').value.trim();
+      if (!name) {
+        document.getElementById('serviceNameFeedback').classList.remove('hidden');
+        document.getElementById('serviceName').focus();
+        return;
+      }
+      document.getElementById('serviceNameFeedback').classList.add('hidden');
+      // Show spinner
+      document.getElementById('formSpinner').style.display = 'block';
+      // Collect form data
+      const bookingData = {
+        serviceName: name,
+        category: document.getElementById('serviceCategory').value,
+        duration: document.getElementById('serviceDuration').value,
+        price: document.getElementById('servicePrice').value,
+        color: document.getElementById('serviceColor').value,
+        description: document.getElementById('serviceDescription').value,
+        active: document.getElementById('serviceActive').checked,
+        buffer: document.getElementById('serviceBuffer').checked
+      };
+      try {
+        const res = await fetch('/api/bookings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bookingData)
+        });
+        document.getElementById('formSpinner').style.display = 'none';
+        if (res.ok) {
+          showSuccess('Booking created successfully!');
+          this.reset();
+          updateServicePreview();
+        } else {
+          showSuccess('Failed to create booking.');
+        }
+      } catch {
+        document.getElementById('formSpinner').style.display = 'none';
+        showSuccess('Failed to create booking.');
+      }
+    });
+
+    // Show success message
+    function showSuccess(msg) {
+      let el = document.createElement('div');
+      el.className = 'success-message fade-in';
+      el.textContent = msg;
+      document.querySelector('.container').prepend(el);
+      setTimeout(() => { el.remove(); }, 2200);
+    }
+
+    // Sidebar menu toggle
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    menuBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('show-sidebar');
+      sidebarOverlay.classList.toggle('show-overlay');
+    });
+    sidebarOverlay.addEventListener('click', () => {
+      sidebar.classList.remove('show-sidebar');
+      sidebarOverlay.classList.remove('show-overlay');
+    });
+
+    // Keyboard accessibility for sidebar
+    menuBtn.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        sidebar.classList.toggle('show-sidebar');
+        sidebarOverlay.classList.toggle('show-overlay');
+      }
+    });
+  </script>
+</body>
+</html>
+

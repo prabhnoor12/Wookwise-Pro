@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Settings</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f9fafb; }
+    #sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 80%;
+      max-width: 14rem;
+      height: 100%;
+      background-color: #1e3a8a;
+      color: white;
+      padding: 1.5rem 1rem 1rem 1rem;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease-in-out;
+      z-index: 50;
+      overflow-y: auto;
+      box-shadow: 2px 0 8px rgba(37,99,235,0.07);
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    #sidebar.show-sidebar {
+      transform: translateX(0);
+    }
+    #menuBtn {
+      display: block;
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background-color: #2563eb;
+      color: white;
+      padding: 0.6rem;
+      border-radius: 0.5rem;
+      z-index: 60;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      font-size: 1.2rem;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #menuBtn:active, #menuBtn:hover {
+      background-color: #1d4ed8;
+    }
+    #sidebarOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 40;
+      display: none;
+    }
+    #sidebarOverlay.show-overlay {
+      display: block;
+    }
+    nav.sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    nav.sidebar-nav a {
+      display: block;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+      transition: background 0.2s, color 0.2s;
+    }
+    nav.sidebar-nav a.active, nav.sidebar-nav a:hover {
+      background: #2563eb;
+      color: #fff;
+    }
+    .sidebar-footer {
+      margin-top: 2rem;
+      font-size: 0.95rem;
+      color: #cbd5e1;
+      text-align: center;
+      border-top: 1px solid #334155;
+      padding-top: 1.5rem;
+    }
+    .sidebar-divider {
+      border-bottom: 1px solid #334155;
+      margin: 1.5rem 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 2rem auto;
+      background: white;
+      padding: 2.5rem 2rem;
+      border-radius: 0.75rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .settings-section {
+      background: #f1f5f9;
+      border-radius: 0.75rem;
+      padding: 2rem 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(37,99,235,0.04);
+      border: 1px solid #e5e7eb;
+    }
+    .settings-section h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #2563eb;
+      margin-bottom: 1.25rem;
+    }
+    .settings-form label {
+      font-weight: 500;
+      color: #1e293b;
+      margin-bottom: 0.25rem;
+      display: block;
+    }
+    .settings-form input[type="text"],
+    .settings-form input[type="email"],
+    .settings-form input[type="password"],
+    .settings-form input[type="number"],
+    .settings-form select {
+      width: 100%;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 1rem;
+      background: #fff;
+      margin-bottom: 0.5rem;
+      transition: border 0.18s;
+    }
+    .settings-form input:focus, .settings-form select:focus {
+      border: 1.5px solid #2563eb;
+      outline: none;
+      background: #f0f6ff;
+    }
+    .settings-form .form-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .settings-form .form-row > * {
+      flex: 1;
+    }
+    .settings-form .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .settings-form button {
+      font-weight: 600;
+      border-radius: 0.5rem;
+      padding: 0.7rem 2rem;
+      font-size: 1rem;
+      border: none;
+      cursor: pointer;
+      transition: background 0.18s;
+    }
+    .settings-form .cancel-btn {
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+    .settings-form .cancel-btn:hover {
+      background: #e5e7eb;
+    }
+    .settings-form .save-btn {
+      background: #2563eb;
+      color: #fff;
+    }
+    .settings-form .save-btn:hover {
+      background: #1d4ed8;
+    }
+    .settings-form .danger-btn {
+      background: #dc2626;
+      color: #fff;
+    }
+    .settings-form .danger-btn:hover {
+      background: #b91c1c;
+    }
+    .success-message {
+      background: #d1fae5;
+      color: #065f46;
+      border-radius: 0.5rem;
+      padding: 1.25rem 1rem;
+      margin: 2rem 0;
+      text-align: center;
+      font-size: 1.15rem;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(16,185,129,0.08);
+    }
+    .fade-in {
+      animation: fadeIn 0.5s;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+    .section-divider {
+      border-bottom: 1px solid #e5e7eb;
+      margin: 2rem 0;
+    }
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      vertical-align: middle;
+    }
+    .toggle-switch input { display: none; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #e5e7eb;
+      border-radius: 24px;
+      transition: .4s;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #fff;
+      border-radius: 50%;
+      transition: .4s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    input:checked + .slider {
+      background-color: #2563eb;
+    }
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+    .settings-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #2563eb;
+      margin-bottom: 0.5rem;
+    }
+    .avatar-upload-label {
+      display: inline-block;
+      background: #f1f5f9;
+      color: #2563eb;
+      border-radius: 0.5rem;
+      padding: 0.4rem 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      margin-bottom: 1rem;
+      transition: background 0.18s;
+    }
+    .avatar-upload-label:hover {
+      background: #2563eb;
+      color: #fff;
+    }
+    @media (min-width: 1024px) {
+      #sidebar {
+        width: 15rem;
+        transform: translateX(0);
+        position: fixed;
+        top: 0;
+        left: 0;
+        display: flex;
+      }
+      #menuBtn {
+        display: none;
+      }
+      #sidebarOverlay {
+        display: none;
+      }
+      .main-content {
+        margin-left: 15rem;
+        margin-top: 0;
+      }
+    }
+    @media (max-width: 1023px) {
+      #sidebar {
+        width: 80vw;
+        max-width: 14rem;
+        padding: 1.25rem 1rem;
+        transform: translateX(-100%);
+        display: flex;
+      }
+      #sidebar.show-sidebar {
+        transform: translateX(0);
+      }
+      .main-content {
+        margin-left: 0;
+        margin-top: 3.5rem;
+        padding: 1rem 0.5rem 2rem 0.5rem;
+      }
+      .container { padding: 1.25rem 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <button id="menuBtn" aria-label="Open menu">☰</button>
+  <div id="sidebarOverlay"></div>
+  <div class="flex">
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div class="mb-6">
+        <span class="text-2xl font-bold tracking-tight">SaaS Admin</span>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="Dashboard.html">Dashboard</a>
+        <a href="Booking.html">Bookings</a>
+        <a href="ServiceManagement.html">Services</a>
+        <a href="Settings.html" class="active">Settings</a>
+      </nav>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-footer">
+        <span>© 2024 SaaS App</span>
+      </div>
+    </aside>
+    <!-- Main Content -->
+    <div class="flex-1 main-content">
+      <div class="container">
+        <h1 class="text-3xl font-bold mb-6 text-blue-800 text-center">Settings</h1>
+        <p class="text-base text-gray-700 mb-8 text-center">Configure your application settings here.</p>
+        <!-- Profile Section -->
+        <div class="settings-section fade-in">
+          <h2>👤 Profile</h2>
+          <form class="settings-form" id="profileForm" autocomplete="off">
+            <div class="flex items-center gap-6 mb-4">
+              <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Avatar" class="settings-avatar" id="avatarPreview" />
+              <label class="avatar-upload-label">
+                Change Avatar
+                <input type="file" id="avatarInput" accept="image/*" style="display:none;" />
+              </label>
+            </div>
+            <div class="form-row">
+              <div>
+                <label for="profileName">Name</label>
+                <input type="text" id="profileName" value="John Doe" required />
+              </div>
+              <div>
+                <label for="profileEmail">Email</label>
+                <input type="email" id="profileEmail" value="john@example.com" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div>
+                <label for="profilePhone">Phone</label>
+                <input type="text" id="profilePhone" value="+49123456789" />
+              </div>
+              <div>
+                <label for="profileLanguage">Language</label>
+                <select id="profileLanguage">
+                  <option value="en">English</option>
+                  <option value="de">Deutsch</option>
+                  <option value="fr">Français</option>
+                </select>
+              </div>
+            </div>
+            <div class="actions">
+              <button type="button" class="cancel-btn">Cancel</button>
+              <button type="submit" class="save-btn">Save Changes</button>
+            </div>
+          </form>
+        </div>
+        <div class="section-divider"></div>
+        <!-- Account Section -->
+        <div class="settings-section fade-in">
+          <h2>🔒 Account</h2>
+          <form class="settings-form" id="accountForm" autocomplete="off">
+            <div class="form-row">
+              <div>
+                <label for="accountPassword">New Password</label>
+                <input type="password" id="accountPassword" placeholder="Enter new password" />
+              </div>
+              <div>
+                <label for="accountPasswordConfirm">Confirm Password</label>
+                <input type="password" id="accountPasswordConfirm" placeholder="Confirm new password" />
+              </div>
+            </div>
+            <div class="actions">
+              <button type="button" class="cancel-btn">Cancel</button>
+              <button type="submit" class="save-btn">Update Password</button>
+            </div>
+          </form>
+        </div>
+        <div class="section-divider"></div>
+        <!-- Preferences Section -->
+        <div class="settings-section fade-in">
+          <h2>⚙️ Preferences</h2>
+          <form class="settings-form" id="preferencesForm" autocomplete="off">
+            <div class="form-row">
+              <div>
+                <label>Dark Mode</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="darkModeToggle" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div>
+                <label>Notifications</label>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="notificationsToggle" checked />
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+            <div class="form-row">
+              <div>
+                <label for="timezone">Timezone</label>
+                <select id="timezone">
+                  <option value="Europe/Berlin">Europe/Berlin</option>
+                  <option value="Europe/London">Europe/London</option>
+                  <option value="America/New_York">America/New_York</option>
+                  <option value="Asia/Kolkata">Asia/Kolkata</option>
+                </select>
+              </div>
+              <div>
+                <label for="dateFormat">Date Format</label>
+                <select id="dateFormat">
+                  <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                  <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                  <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                </select>
+              </div>
+            </div>
+            <div class="actions">
+              <button type="button" class="cancel-btn">Cancel</button>
+              <button type="submit" class="save-btn">Save Preferences</button>
+            </div>
+          </form>
+        </div>
+        <div class="section-divider"></div>
+        <!-- Danger Zone -->
+        <div class="settings-section fade-in" style="background:#fff0f0;">
+          <h2 style="color:#dc2626;">🚨 Danger Zone</h2>
+          <form class="settings-form" id="dangerForm" autocomplete="off">
+            <div class="mb-4">
+              <label class="block font-bold text-red-700 mb-2">Delete Account</label>
+              <p class="text-red-600 mb-2">This action is irreversible. All your data will be lost.</p>
+            </div>
+            <div class="actions">
+              <button type="button" class="danger-btn">Delete Account</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Sidebar menu toggle
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    menuBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('show-sidebar');
+      sidebarOverlay.classList.toggle('show-overlay');
+    });
+    sidebarOverlay.addEventListener('click', () => {
+      sidebar.classList.remove('show-sidebar');
+      sidebarOverlay.classList.remove('show-overlay');
+    });
+
+    // Avatar upload preview
+    const avatarInput = document.getElementById('avatarInput');
+    const avatarPreview = document.getElementById('avatarPreview');
+    if (avatarInput) {
+      avatarInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            avatarPreview.src = e.target.result;
+          };
+          reader.readAsDataURL(this.files[0]);
+        }
+      });
+    }
+
+    // Profile form save (with avatar upload)
+    document.getElementById('profileForm').onsubmit = async function(e) {
+      e.preventDefault();
+      const name = document.getElementById('profileName').value;
+      const email = document.getElementById('profileEmail').value;
+      const phone = document.getElementById('profilePhone').value;
+      const language = document.getElementById('profileLanguage').value;
+      const avatarFile = document.getElementById('avatarInput').files[0];
+
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('email', email);
+      formData.append('phone', phone);
+      formData.append('language', language);
+      if (avatarFile) formData.append('avatar', avatarFile);
+
+      try {
+        const res = await fetch('/api/profile', {
+          method: 'POST',
+          body: formData
+        });
+        if (res.ok) {
+          showSuccess('Profile updated successfully!');
+        } else {
+          showSuccess('Failed to update profile.');
+        }
+      } catch {
+        showSuccess('Failed to update profile.');
+      }
+    };
+
+    // Account form save (change password)
+    document.getElementById('accountForm').onsubmit = async function(e) {
+      e.preventDefault();
+      const password = document.getElementById('accountPassword').value;
+      const confirm = document.getElementById('accountPasswordConfirm').value;
+      if (password !== confirm) {
+        showSuccess('Passwords do not match.');
+        return;
+      }
+      try {
+        const res = await fetch('/api/account', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        if (res.ok) {
+          showSuccess('Password updated!');
+        } else {
+          showSuccess('Failed to update password.');
+        }
+      } catch {
+        showSuccess('Failed to update password.');
+      }
+    };
+
+    // Preferences form save
+    document.getElementById('preferencesForm').onsubmit = async function(e) {
+      e.preventDefault();
+      const darkMode = document.getElementById('darkModeToggle').checked;
+      const notifications = document.getElementById('notificationsToggle').checked;
+      const timezone = document.getElementById('timezone').value;
+      const dateFormat = document.getElementById('dateFormat').value;
+      try {
+        const res = await fetch('/api/preferences', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ darkMode, notifications, timezone, dateFormat })
+        });
+        if (res.ok) {
+          showSuccess('Preferences saved!');
+        } else {
+          showSuccess('Failed to save preferences.');
+        }
+      } catch {
+        showSuccess('Failed to save preferences.');
+      }
+    };
+
+    // Danger zone (delete account)
+    document.querySelector('.danger-btn').onclick = async function() {
+      if (confirm('Are you sure you want to delete your account? This cannot be undone.')) {
+        try {
+          const res = await fetch('/api/delete-account', { method: 'DELETE' });
+          if (res.ok) {
+            showSuccess('Account deleted.');
+            // Optionally redirect or log out
+          } else {
+            showSuccess('Failed to delete account.');
+          }
+        } catch {
+          showSuccess('Failed to delete account.');
+        }
+      }
+    };
+
+    // Show success message
+    function showSuccess(msg) {
+      let el = document.createElement('div');
+      el.className = 'success-message fade-in';
+      el.textContent = msg;
+      document.querySelector('.container').prepend(el);
+      setTimeout(() => { el.remove(); }, 2200);
+    }
+
+    // Dark mode toggle (demo)
+    document.getElementById('darkModeToggle').addEventListener('change', function() {
+      if (this.checked) {
+        document.body.style.background = '#18181b';
+        document.body.style.color = '#f1f5f9';
+      } else {
+        document.body.style.background = '#f9fafb';
+        document.body.style.color = '';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,209 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Multi-Tenant: Business Model ---
+model Business {
+  id           Int            @id @default(autoincrement())
+  name         String
+  createdAt    DateTime       @default(now())
+  users        User[]
+  clients      Client[]
+  services     Service[]
+  providers    Provider[]
+  // Add other relations as needed
+  Booking      Booking[]
+  Payment      Payment[]
+  Setting      Setting[]
+  Invoice      Invoice[]
+  Subscription Subscription[]
+}
+
+// --- Updated Models with businessId ---
+
+model Service {
+  id              Int       @id @default(autoincrement())
+  name            String
+  durationMinutes Int
+  price           Float?
+  bookings        Booking[]
+  providerId      Int?
+  archived        Boolean   @default(false)
+  deletedAt       DateTime?
+  Provider        Provider? @relation(fields: [providerId], references: [id])
+  category        String?
+  description     String?
+  active          Boolean   @default(true)
+  buffer          Int?
+  businessId      Int
+  business        Business  @relation(fields: [businessId], references: [id])
+}
+
+model Client {
+  id            Int            @id @default(autoincrement())
+  name          String
+  email         String         @unique
+  phone         String?
+  bookings      Booking[]
+  subscriptions Subscription[]
+  invoices      Invoice[]      @relation("ClientInvoices")
+  deletedAt     DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deleteReason  String?
+  businessId    Int
+  business      Business       @relation(fields: [businessId], references: [id])
+}
+
+model Booking {
+  id            Int       @id @default(autoincrement())
+  date          DateTime
+  startTime     String
+  endTime       String
+  service       Service   @relation(fields: [serviceId], references: [id])
+  serviceId     Int
+  client        Client    @relation(fields: [clientId], references: [id])
+  clientId      Int
+  providerId    Int?
+  status        String
+  deletedAt     DateTime?
+  cancelReason  String?
+  paymentOption String?
+  paymentStatus String?
+  paymentAmount Float?
+  paymentDate   DateTime?
+  notes         String?
+  groupCount    Int?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  bookingRef    String?   @unique
+  Payment       Payment?
+  Invoice       Invoice?  @relation("BookingInvoice")
+  businessId    Int
+  business      Business  @relation(fields: [businessId], references: [id])
+}
+
+model Payment {
+  id         Int      @id @default(autoincrement())
+  booking    Booking  @relation(fields: [bookingId], references: [id])
+  bookingId  Int      @unique
+  amount     Float
+  status     String
+  link       String?
+  createdAt  DateTime @default(now())
+  businessId Int
+  business   Business @relation(fields: [businessId], references: [id])
+}
+
+model Provider {
+  id                     Int                     @id @default(autoincrement())
+  timezone               String
+  services               Service[]
+  availabilities         Availability[]
+  availabilityExceptions AvailabilityException[]
+  breaks                 Break[]
+  businessId             Int
+  business               Business                @relation(fields: [businessId], references: [id])
+}
+
+model Availability {
+  id         Int      @id @default(autoincrement())
+  provider   Provider @relation(fields: [providerId], references: [id])
+  providerId Int
+  weekday    Int
+  startTime  String
+  endTime    String
+}
+
+model AvailabilityException {
+  id          Int      @id @default(autoincrement())
+  provider    Provider @relation(fields: [providerId], references: [id])
+  providerId  Int
+  date        DateTime
+  startTime   String?
+  endTime     String?
+  isAvailable Boolean
+}
+
+model Break {
+  id         Int      @id @default(autoincrement())
+  provider   Provider @relation(fields: [providerId], references: [id])
+  providerId Int
+  weekday    Int
+  startTime  String
+  endTime    String
+}
+
+model User {
+  id                 Int                 @id @default(autoincrement())
+  email              String              @unique
+  password           String
+  role               String              @default("USER")
+  deletedAt          DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  emailConfirmations EmailConfirmation[]
+  businessId         Int
+  business           Business            @relation(fields: [businessId], references: [id])
+}
+
+model Setting {
+  id         Int      @id @default(autoincrement())
+  key        String   @unique
+  value      String
+  group      String?
+  businessId Int
+  business   Business @relation(fields: [businessId], references: [id])
+}
+
+model Invoice {
+  id             Int           @id @default(autoincrement())
+  client         Client        @relation("ClientInvoices", fields: [clientId], references: [id])
+  clientId       Int
+  booking        Booking?      @relation("BookingInvoice", fields: [bookingId], references: [id])
+  bookingId      Int?          @unique
+  amount         Float
+  dueDate        DateTime
+  status         String
+  paidAt         DateTime?
+  notes          String?
+  deletedAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  subscriptionId Int?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  businessId     Int
+  business       Business      @relation(fields: [businessId], references: [id])
+}
+
+model Subscription {
+  id              Int       @id @default(autoincrement())
+  client          Client    @relation(fields: [clientId], references: [id])
+  clientId        Int
+  amount          Float
+  status          String
+  nextInvoiceDate DateTime
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  invoices        Invoice[]
+  businessId      Int
+  business        Business  @relation(fields: [businessId], references: [id])
+}
+
+model EmailConfirmation {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  token     String   @unique
+  expiresAt DateTime
+  confirmed Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

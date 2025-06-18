@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Service Management</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #f9fafb; }
+    #sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 15rem;
+      height: 100%;
+      background-color: #1e3a8a;
+      color: white;
+      padding: 2rem 1rem 1rem 1rem;
+      z-index: 50;
+      overflow-y: auto;
+      box-shadow: 2px 0 8px rgba(37,99,235,0.07);
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      transition: transform 0.3s;
+      transform: translateX(-100%);
+    }
+    #sidebar.show-sidebar {
+      transform: translateX(0);
+    }
+    #menuBtn {
+      display: block;
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background-color: #2563eb;
+      color: white;
+      padding: 0.6rem;
+      border-radius: 0.5rem;
+      z-index: 60;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      font-size: 1.2rem;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #menuBtn:active, #menuBtn:hover {
+      background-color: #1d4ed8;
+    }
+    #sidebarOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 40;
+      display: none;
+    }
+    #sidebarOverlay.show-overlay {
+      display: block;
+    }
+    nav.sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    nav.sidebar-nav a {
+      display: block;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+      transition: background 0.2s, color 0.2s;
+    }
+    nav.sidebar-nav a.active, nav.sidebar-nav a:hover {
+      background: #2563eb;
+      color: #fff;
+    }
+    @media (min-width: 1024px) {
+      #sidebar {
+        width: 15rem;
+        transform: translateX(0);
+        position: fixed;
+        top: 0;
+        left: 0;
+        display: flex;
+      }
+      #menuBtn {
+        display: none;
+      }
+      #sidebarOverlay {
+        display: none;
+      }
+      .main-content {
+        margin-left: 15rem;
+        margin-top: 0;
+      }
+    }
+    @media (max-width: 1023px) {
+      #sidebar {
+        width: 80vw;
+        max-width: 14rem;
+        padding: 1.25rem 1rem;
+        transform: translateX(-100%);
+        display: flex;
+      }
+      #sidebar.show-sidebar {
+        transform: translateX(0);
+      }
+      .main-content {
+        margin-left: 0;
+        margin-top: 3.5rem;
+        padding: 1rem 0.5rem 2rem 0.5rem;
+      }
+    }
+    /* ...existing code for service cards, filter bar, etc... */
+    .header-bar, .add-bar { display: none; }
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: #fff;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+      flex-wrap: wrap;
+    }
+    .filter-bar input[type="search"] {
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      background: #f9fafb;
+      outline: none;
+      width: 180px;
+    }
+    .filter-btn {
+      background: #f1f5f9;
+      color: #1e3a8a;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: background 0.2s, color 0.2s;
+    }
+    .filter-btn:hover {
+      background: #2563eb;
+      color: #fff;
+    }
+    .service-list {
+      max-width: 800px;
+      margin: 2rem auto;
+      background: #fff;
+      border-radius: 0.75rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.07);
+      padding: 0;
+      overflow: hidden;
+    }
+    .service-card {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .service-card:last-child { border-bottom: none; }
+    .service-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .service-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      font-size: 1rem;
+      color: #475569;
+      margin-bottom: 0.25rem;
+    }
+    .service-category {
+      background: #f1f5f9;
+      color: #2563eb;
+      font-size: 0.95rem;
+      border-radius: 0.5rem;
+      padding: 0.15rem 0.75rem;
+      margin-left: 0.5rem;
+      font-weight: 500;
+    }
+    .service-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.25rem;
+    }
+    .action-btn {
+      background: #f1f5f9;
+      color: #2563eb;
+      border: none;
+      border-radius: 0.5rem;
+      padding: 0.35rem 0.9rem;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .action-btn:hover { background: #2563eb; color: #fff; }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 2rem 0 1rem 0;
+    }
+    .pagination-btn {
+      background: #f1f5f9;
+      color: #1e3a8a;
+      border: none;
+      border-radius: 0.4rem;
+      padding: 0.4rem 0.9rem;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .pagination-btn.active, .pagination-btn:hover {
+      background: #2563eb;
+      color: #fff;
+    }
+    @media (max-width: 600px) {
+      .header-bar, .add-bar, .filter-bar { padding: 1rem 0.5rem; }
+      .service-list { margin: 1rem 0.25rem; }
+      .service-card { padding: 1rem 0.75rem; }
+    }
+    .add-service-form {
+      max-width: 480px;
+      margin: 2.5rem auto;
+      background: #fff;
+      border-radius: 1rem;
+      box-shadow: 0 4px 24px rgba(37,99,235,0.08);
+      padding: 2rem 2rem 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      border: 1px solid #e5e7eb;
+    }
+    .add-service-form h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #2563eb;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .add-service-form label {
+      font-weight: 500;
+      color: #1e293b;
+      margin-bottom: 0.25rem;
+      display: block;
+    }
+    .add-service-form input[type="text"],
+    .add-service-form input[type="number"],
+    .add-service-form textarea {
+      width: 100%;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 1rem;
+      background: #f9fafb;
+      margin-bottom: 0.5rem;
+    }
+    .add-service-form textarea {
+      min-height: 2.5rem;
+      resize: vertical;
+    }
+    .add-service-form .row {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+    .add-service-form .row > * {
+      flex: 1;
+    }
+    .add-service-form .checkbox-row {
+      display: flex;
+      gap: 2rem;
+      margin-top: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .add-service-form .checkbox-row label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 500;
+      margin-bottom: 0;
+    }
+    .add-service-form .actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .add-service-form button {
+      font-weight: 600;
+      border-radius: 0.5rem;
+      padding: 0.6rem 1.5rem;
+      font-size: 1rem;
+      border: none;
+      cursor: pointer;
+      transition: background 0.18s;
+    }
+    .add-service-form .cancel-btn {
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+    .add-service-form .cancel-btn:hover {
+      background: #e5e7eb;
+    }
+    .add-service-form .save-btn {
+      background: #2563eb;
+      color: #fff;
+    }
+    .add-service-form .save-btn:hover {
+      background: #1d4ed8;
+    }
+    @media (max-width: 600px) {
+      .add-service-form { padding: 1.2rem 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <button id="menuBtn" aria-label="Open menu">☰</button>
+  <div id="sidebarOverlay"></div>
+  <div class="flex">
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div class="mb-6">
+        <span class="text-2xl font-bold tracking-tight">SaaS Admin</span>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="Dashboard.html">Dashboard</a>
+        <a href="Booking.html">Bookings</a>
+        <a href="#" onclick="alert('Clients page coming soon!');return false;">Clients</a>
+        <a href="ServiceManagement.html" class="active">Services</a>
+        <a href="Settings.html">Settings</a>
+      </nav>
+    </aside>
+    <!-- Main Content -->
+    <div class="flex-1 main-content">
+      <!-- Filter/Sort Bar -->
+      <div class="filter-bar">
+        <input type="search" placeholder="🔍 Search Service" id="searchInput" />
+        <button class="filter-btn" onclick="alert('Sort by duration!')">⏱ Sort by Duration ▼</button>
+        <button class="filter-btn" onclick="alert('Sort by price!')">€ Sort by Price ▼</button>
+      </div>
+      <!-- Add Service Form -->
+      <form class="add-service-form" autocomplete="off" style="max-width:700px;">
+        <h2>🛠️ Add New Service</h2>
+        <div>
+          <label for="serviceName">Service Name</label>
+          <input type="text" id="serviceName" placeholder="Enter service name" required />
+        </div>
+        <div class="row">
+          <div>
+            <label for="serviceDuration">Duration</label>
+            <input type="number" id="serviceDuration" min="1" value="60" required />
+          </div>
+          <div style="align-self: flex-end; margin-bottom: 0.5rem;">minutes</div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="servicePrice">Price</label>
+            <input type="number" id="servicePrice" min="0" step="0.01" value="40" />
+          </div>
+          <div style="align-self: flex-end; margin-bottom: 0.5rem;">€</div>
+        </div>
+        <div>
+          <label for="serviceCategory">Category / Tag</label>
+          <input type="text" id="serviceCategory" placeholder="e.g. Yoga, Online" />
+        </div>
+        <div>
+          <label for="serviceDescription">Description</label>
+          <textarea id="serviceDescription" rows="3" placeholder="Enter description"></textarea>
+        </div>
+        <div class="checkbox-row">
+          <label><input type="checkbox" id="serviceActive" checked /> Mark as Active</label>
+          <label><input type="checkbox" id="serviceBuffer" /> Add buffer time after session</label>
+        </div>
+        <div class="actions">
+          <button type="button" class="cancel-btn">❌ Cancel</button>
+          <button type="submit" class="save-btn">💾 Save Service</button>
+        </div>
+      </form>
+      <!-- Service List -->
+      <div class="service-list" id="serviceList">
+        <!-- Service cards will be rendered here by JS -->
+      </div>
+      <!-- Pagination -->
+      <div class="pagination">
+        <button class="pagination-btn">&laquo; Prev</button>
+        <button class="pagination-btn active">1</button>
+        <button class="pagination-btn">2</button>
+        <button class="pagination-btn">3</button>
+        <button class="pagination-btn">Next &raquo;</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    menuBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('show-sidebar');
+      sidebarOverlay.classList.toggle('show-overlay');
+    });
+    sidebarOverlay.addEventListener('click', () => {
+      sidebar.classList.remove('show-sidebar');
+      sidebarOverlay.classList.remove('show-overlay');
+    });
+
+    // Fetch and render services
+    async function loadServices() {
+      const serviceList = document.getElementById('serviceList');
+      // Show loading indicator
+      serviceList.innerHTML = '<div style="padding:2rem;text-align:center;color:#2563eb;font-weight:500;">Loading services...</div>';
+      try {
+        // Change this URL to your actual backend API endpoint.
+        // For example, if your backend runs on port 3000:
+        // const res = await fetch('http://localhost:3000/api/services');
+        // Or if proxied, keep as '/api/services'
+        const res = await fetch('http://localhost:5500/api/services');
+        if (!res.ok) throw new Error('Failed to load services: ' + res.status);
+        const services = await res.json();
+        serviceList.innerHTML = '';
+        if (services.length === 0) {
+          serviceList.innerHTML = '<div style="padding:2rem;text-align:center;color:#64748b;">No services found.</div>';
+          return;
+        }
+        services.forEach(service => {
+          const card = document.createElement('div');
+          card.className = 'service-card';
+          card.innerHTML = `
+            <div class="service-title">📝 ${service.name} <span class="service-category">${service.category || ''}</span></div>
+            <div class="service-meta">
+              <span>Duration: ${service.durationMinutes} mins</span>
+              <span>Price: €${service.price}</span>
+            </div>
+            <div class="service-actions">
+              <button class="action-btn" data-id="${service.id}" data-action="edit">✏️ Edit</button>
+              <button class="action-btn" data-id="${service.id}" data-action="delete">🗑️ Delete</button>
+            </div>
+          `;
+          serviceList.appendChild(card);
+        });
+
+        // Attach delete event listeners
+        serviceList.querySelectorAll('button[data-action="delete"]').forEach(btn => {
+          btn.onclick = async function() {
+            if (confirm('Delete this service?')) {
+              await deleteService(this.getAttribute('data-id'));
+            }
+          };
+        });
+
+        // Attach edit event listeners (implement as needed)
+        serviceList.querySelectorAll('button[data-action="edit"]').forEach(btn => {
+          btn.onclick = function() {
+            alert('Edit feature not implemented in this demo.');
+          };
+        });
+      } catch (err) {
+        serviceList.innerHTML = `<div style="padding:2rem;text-align:center;color:#dc2626;">${err.message}</div>`;
+      }
+    }
+
+    // Add service via form
+    document.querySelector('.add-service-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const service = {
+        name: document.getElementById('serviceName').value,
+        durationMinutes: parseInt(document.getElementById('serviceDuration').value, 10),
+        price: parseFloat(document.getElementById('servicePrice').value),
+        category: document.getElementById('serviceCategory').value,
+        description: document.getElementById('serviceDescription').value,
+        active: document.getElementById('serviceActive').checked,
+        buffer: document.getElementById('serviceBuffer').checked
+      };
+      try {
+        const res = await fetch('http://localhost:5500/api/services', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(service)
+        });
+        if (res.ok) {
+          showSuccess('Service added!');
+          this.reset();
+          loadServices();
+        } else {
+          showSuccess('Failed to add service.');
+        }
+      } catch {
+        showSuccess('Failed to add service.');
+      }
+    });
+
+    // Cancel button resets the form
+    document.querySelector('.add-service-form .cancel-btn').onclick = function() {
+      document.querySelector('.add-service-form').reset();
+    };
+
+    // Delete service
+    async function deleteService(serviceId) {
+      try {
+        const res = await fetch(`/api/services/${serviceId}`, { method: 'DELETE' });
+        if (res.ok) {
+          showSuccess('Service deleted.');
+          loadServices();
+        } else {
+          showSuccess('Failed to delete service.');
+        }
+      } catch {
+        showSuccess('Failed to delete service.');
+      }
+    }
+
+    // Show success message
+    function showSuccess(msg) {
+      let el = document.createElement('div');
+      el.className = 'success-message fade-in';
+      el.textContent = msg;
+      document.querySelector('.main-content').prepend(el);
+      setTimeout(() => { el.remove(); }, 2200);
+    }
+
+    window.addEventListener('DOMContentLoaded', loadServices);
+  </script>
+</body>
+</html>
+
+
+

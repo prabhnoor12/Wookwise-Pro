@@ -1,0 +1,113 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+ 
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Service {
+  id              Int       @id @default(autoincrement())
+  name            String
+  durationMinutes Int
+  price           Float?
+  bookings        Booking[]
+  providerId      Int?
+  archived        Boolean   @default(false)
+  deletedAt       DateTime?
+  // Optionally: blackoutPeriods Json?
+  Provider        Provider? @relation(fields: [providerId], references: [id])
+}
+
+model Client {
+  id           Int       @id @default(autoincrement())
+  name         String
+  email        String    @unique
+  phone        String?
+  bookings     Booking[]
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deleteReason String?
+}
+
+model Booking {
+  id            Int       @id @default(autoincrement())
+  date          DateTime
+  startTime     String
+  endTime       String
+  service       Service   @relation(fields: [serviceId], references: [id])
+  serviceId     Int
+  client        Client    @relation(fields: [clientId], references: [id])
+  clientId      Int
+  providerId    Int?
+  status        String // e.g. "confirmed", "pending", "completed"
+  deletedAt     DateTime?
+  cancelReason  String?
+  paymentOption String? // "PAY_LATER", "ONLINE"
+  paymentStatus String? // "PAID", "UNPAID", "PENDING", "LINK_SENT", etc.
+  paymentAmount Float?
+  paymentDate   DateTime?
+  notes         String?
+  groupCount    Int?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  bookingRef    String?   @unique
+  Payment       Payment?
+}
+
+model Payment {
+  id        Int      @id @default(autoincrement())
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  bookingId Int      @unique
+  amount    Float
+  status    String // e.g. "PAID", "PENDING", "REFUNDED", "FAILED"
+  link      String?
+  createdAt DateTime @default(now())
+}
+
+model Provider {
+  id                     Int                     @id @default(autoincrement())
+  timezone               String
+  services               Service[]
+  availabilities         Availability[]
+  availabilityExceptions AvailabilityException[]
+  breaks                 Break[]
+  // ...other fields...
+}
+
+model Availability {
+  id         Int      @id @default(autoincrement())
+  provider   Provider @relation(fields: [providerId], references: [id])
+  providerId Int
+  weekday    Int // 1=Monday ... 7=Sunday
+  startTime  String // '09:00'
+  endTime    String // '17:00'
+}
+
+model AvailabilityException {
+  id          Int      @id @default(autoincrement())
+  provider    Provider @relation(fields: [providerId], references: [id])
+  providerId  Int
+  date        DateTime
+  startTime   String?
+  endTime     String?
+  isAvailable Boolean
+}
+
+model Break {
+  id         Int      @id @default(autoincrement())
+  provider   Provider @relation(fields: [providerId], references: [id])
+  providerId Int
+  weekday    Int // 1=Monday ... 7=Sunday
+  startTime  String // '12:00'
+  endTime    String // '13:00'
+}

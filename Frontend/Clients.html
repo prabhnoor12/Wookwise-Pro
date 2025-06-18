@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Clients - SaaS Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap 5 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f8fafc;
+        }
+        .sidebar {
+            min-height: 100vh;
+            background: #212529;
+            color: #fff;
+        }
+        .sidebar .nav-link {
+            color: #adb5bd;
+        }
+        .sidebar .nav-link.active {
+            color: #fff;
+            background: #343a40;
+        }
+        .table-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .modal-header {
+            background: #f1f3f5;
+        }
+        .search-input {
+            max-width: 300px;
+        }
+        .table-responsive {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-2 d-none d-md-block sidebar py-4">
+                <div class="text-center mb-4">
+                    <h3>SaaS Admin</h3>
+                </div>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">Clients</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Projects</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Invoices</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Settings</a>
+                    </li>
+                </ul>
+            </nav>
+            <!-- Main Content -->
+            <main class="col-md-10 ms-sm-auto px-md-4 py-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Clients</h2>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#clientModal" onclick="openAddClientModal()">Add Client</button>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <input type="text" class="form-control search-input" id="searchInput" placeholder="Search clients..." onkeyup="filterClients()">
+                    <div>
+                        <select class="form-select" id="statusFilter" style="width: 150px; display: inline-block;" onchange="filterClients()">
+                            <option value="">All Statuses</option>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="Pending">Pending</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle" id="clientsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Avatar</th>
+                                <th scope="col">Name</th>
+                                <th scope="col">Company</th>
+                                <th scope="col">Email</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Joined</th>
+                                <th scope="col">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientsTbody">
+                            <!-- Placeholder data, will be filled by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Pagination -->
+                <nav>
+                    <ul class="pagination justify-content-end" id="pagination">
+                        <!-- Pagination items will be rendered by JS -->
+                    </ul>
+                </nav>
+            </main>
+        </div>
+    </div>
+
+    <!-- Add/Edit Client Modal -->
+    <div class="modal fade" id="clientModal" tabindex="-1" aria-labelledby="clientModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form class="modal-content" id="clientForm" onsubmit="saveClient(event)">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="clientModalLabel">Add Client</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="clientId">
+                    <div class="mb-3">
+                        <label for="clientName" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="clientName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="clientCompany" class="form-label">Company</label>
+                        <input type="text" class="form-control" id="clientCompany" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="clientEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="clientEmail" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="clientStatus" class="form-label">Status</label>
+                        <select class="form-select" id="clientStatus" required>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="Pending">Pending</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="clientAvatar" class="form-label">Avatar URL</label>
+                        <input type="url" class="form-control" id="clientAvatar">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Client</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // --- Placeholder client data ---
+        let clients = [];
+        let nextId = 1;
+        // --- Pagination ---
+        const pageSize = 10;
+        let currentPage = 1;
+
+        function getFilteredClients() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const status = document.getElementById('statusFilter').value;
+            return clients.filter(c => {
+                const matchesSearch = c.name.toLowerCase().includes(search) || c.company.toLowerCase().includes(search) || c.email.toLowerCase().includes(search);
+                const matchesStatus = !status || c.status === status;
+                return matchesSearch && matchesStatus;
+            });
+        }
+
+        function renderClientsTable() {
+            const tbody = document.getElementById('clientsTbody');
+            tbody.innerHTML = '';
+            const filtered = getFilteredClients();
+            const start = (currentPage-1)*pageSize;
+            const end = start + pageSize;
+            filtered.slice(start, end).forEach((c, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <th scope="row">${start+idx+1}</th>
+                    <td><img src="${c.avatar}" class="table-avatar" alt="Avatar"></td>
+                    <td>${c.name}</td>
+                    <td>${c.company}</td>
+                    <td>${c.email}</td>
+                    <td><span class="badge bg-${c.status==='Active'?'success':c.status==='Inactive'?'secondary':'warning'}">${c.status}</span></td>
+                    <td>${c.joined}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditClientModal(${c.id})">Edit</button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteClient(${c.id})">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            renderPagination(filtered.length);
+        }
+
+        function renderPagination(total) {
+            const ul = document.getElementById('pagination');
+            ul.innerHTML = '';
+            const pageCount = Math.ceil(total/pageSize);
+            for(let i=1; i<=pageCount; i++) {
+                const li = document.createElement('li');
+                li.className = 'page-item' + (i===currentPage?' active':'');
+                li.innerHTML = `<a class="page-link" href="#" onclick="gotoPage(${i});return false;">${i}</a>`;
+                ul.appendChild(li);
+            }
+        }
+
+        function gotoPage(page) {
+            currentPage = page;
+            renderClientsTable();
+        }
+
+        function filterClients() {
+            currentPage = 1;
+            renderClientsTable();
+        }
+
+        // --- Modal handling ---
+        function openAddClientModal() {
+            document.getElementById('clientModalLabel').innerText = 'Add Client';
+            document.getElementById('clientForm').reset();
+            document.getElementById('clientId').value = '';
+        }
+
+        function openEditClientModal(id) {
+            const client = clients.find(c => c.id === id);
+            if (!client) return;
+            document.getElementById('clientModalLabel').innerText = 'Edit Client';
+            document.getElementById('clientId').value = client.id;
+            document.getElementById('clientName').value = client.name;
+            document.getElementById('clientCompany').value = client.company;
+            document.getElementById('clientEmail').value = client.email;
+            document.getElementById('clientStatus').value = client.status;
+            document.getElementById('clientAvatar').value = client.avatar;
+            const modal = new bootstrap.Modal(document.getElementById('clientModal'));
+            modal.show();
+        }
+
+        function saveClient(event) {
+            event.preventDefault();
+            const id = document.getElementById('clientId').value;
+            const name = document.getElementById('clientName').value;
+            const company = document.getElementById('clientCompany').value;
+            const email = document.getElementById('clientEmail').value;
+            const status = document.getElementById('clientStatus').value;
+            const avatar = document.getElementById('clientAvatar').value || `https://randomuser.me/api/portraits/lego/${Math.floor(Math.random()*10)}.jpg`;
+            if (id) {
+                // Edit
+                const client = clients.find(c => c.id == id);
+                if (client) {
+                    client.name = name;
+                    client.company = company;
+                    client.email = email;
+                    client.status = status;
+                    client.avatar = avatar;
+                }
+            } else {
+                // Add
+                clients.push({
+                    id: nextId++,
+                    name, company, email, status,
+                    joined: new Date().toISOString().slice(0,10),
+                    avatar
+                });
+            }
+            bootstrap.Modal.getInstance(document.getElementById('clientModal')).hide();
+            renderClientsTable();
+        }
+
+        function deleteClient(id) {
+            if (confirm('Are you sure you want to delete this client?')) {
+                clients = clients.filter(c => c.id !== id);
+                renderClientsTable();
+            }
+        }
+
+        // --- Initial render ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderClientsTable();
+        });
+    </script>
+</body>
+</html>
